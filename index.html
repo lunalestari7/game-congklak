@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Congklak Tradisional Nusantara - Pembuat Game: Luna Lestari, Nurserin, Agustina</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at center, #1b4d3e 0%, #0d231b 100%);
+        }
+        /* Efek kayu estetik untuk papan */
+        .board-wood {
+            background: linear-gradient(135deg, #5c2c16 0%, #3a1a09 100%);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 2px 10px rgba(255, 255, 255, 0.1);
+        }
+        /* Lubang congklak */
+        .pit {
+            background: radial-gradient(circle, #2a1205 0%, #150902 100%);
+            border: 3px solid #854d0e;
+            box-shadow: inset 0 8px 12px rgba(0,0,0,0.8), 0 2px 4px rgba(255,255,255,0.05);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .pit:hover:not(.disabled) {
+            border-color: #fbbf24;
+            transform: scale(1.05);
+            box-shadow: inset 0 6px 10px rgba(0,0,0,0.7), 0 0 15px rgba(251, 191, 36, 0.4);
+        }
+        .pit.active-turn {
+            border-color: #34d399;
+            box-shadow: inset 0 6px 10px rgba(0,0,0,0.7), 0 0 20px rgba(52, 211, 153, 0.6);
+        }
+        /* Lumbung besar */
+        .store {
+            background: radial-gradient(circle, #3d1c0a 0%, #1a0b04 100%);
+            border: 4px solid #a16207;
+            box-shadow: inset 0 10px 15px rgba(0,0,0,0.8);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-amber-50 flex flex-col justify-between p-3 md:p-6 select-none overflow-x-hidden">
+
+    <!-- ==================== LAYAR LOADING (INTRO) ==================== -->
+    <div id="loading-screen" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-2xl w-full bg-amber-950/95 border-4 border-amber-500 rounded-3xl p-8 shadow-2xl relative overflow-hidden backdrop-blur-md">
+            
+            <!-- Judul Game Paling Besar -->
+            <h1 class="text-3xl sm:text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 tracking-tight leading-tight mb-3">
+                CONGKLAK / DAKON
+            </h1>
+            <div class="text-xs md:text-sm font-semibold text-emerald-200 tracking-wider uppercase mb-6">
+                Permainan Tradisional Indonesia 2 Pemain
+            </div>
+
+            <!-- Nama Pembuat Game -->
+            <div class="bg-amber-900/60 border-y-2 border-amber-600/60 py-3 px-6 rounded-xl mb-6">
+                <p class="text-[11px] uppercase tracking-widest text-amber-300 font-semibold mb-1">Dibuat Oleh Pembuat Game:</p>
+                <p class="text-base sm:text-xl font-extrabold text-white tracking-wide">
+                    Luna Lestari <span class="text-amber-400">•</span> Nurserin <span class="text-amber-400">•</span> Agustina
+                </p>
+            </div>
+
+            <!-- Progress Bar Loading (Agak Lama) -->
+            <div class="w-full bg-amber-950 rounded-full h-5 mb-3 overflow-hidden border-2 border-amber-700 p-0.5 shadow-inner">
+                <div id="loading-bar" class="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 h-full w-0 rounded-full transition-all duration-200 shadow-lg"></div>
+            </div>
+            
+            <div id="loading-status" class="text-xs sm:text-sm font-bold text-amber-200/90 tracking-wider mb-6">
+                Menyiapkan Papan Kayu & Biji Congklak... (0%)
+            </div>
+
+            <!-- Tombol Mulai (Muncul Setelah Loading Selesai) -->
+            <button id="start-btn" onclick="startGame()" class="hidden mx-auto bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-amber-950 font-extrabold text-lg md:text-xl px-10 py-3.5 rounded-2xl shadow-xl transition active:scale-95 border-2 border-yellow-200 cursor-pointer">
+                MULAI PERMAINAN 🚀
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== HEADER UTAMA ==================== -->
+    <header class="text-center my-2">
+        <div class="inline-flex items-center gap-2 bg-amber-950/60 border border-amber-600/40 px-4 py-1.5 rounded-full mb-2 shadow-lg backdrop-blur-sm">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+            <span class="text-xs md:text-sm font-semibold tracking-wide text-amber-300">Permainan Tradisional Indonesia</span>
+        </div>
+        <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 drop-shadow-sm">
+            CONGKLAK / DAKON
+        </h1>
+        <!-- Nama Pembuat Game Tepat Di Bawah Judul -->
+        <p class="text-xs md:text-sm font-bold text-amber-300 mt-1 max-w-md mx-auto">
+            Pembuat Game: <span class="text-white">Luna Lestari</span> • <span class="text-white">Nurserin</span> • <span class="text-white">Agustina</span>
+        </p>
+    </header>
+
+    <!-- ==================== KONTEN UTAMA GAME ==================== -->
+    <main class="w-full max-w-5xl mx-auto flex flex-col items-center my-auto">
+        
+        <!-- Dashboard Skor & Status -->
+        <div class="w-full flex flex-col sm:flex-row justify-between items-center gap-4 bg-amber-950/70 border border-amber-700/50 backdrop-blur-md px-6 py-3 rounded-2xl mb-4 shadow-xl">
+            <!-- Player 2 Info -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-800 border border-amber-500 flex items-center justify-center font-bold text-amber-200 shadow-inner">
+                    P2
+                </div>
+                <div>
+                    <p class="text-xs text-amber-400 font-semibold uppercase tracking-wider">Player 2 (Atas)</p>
+                    <p class="text-lg font-extrabold text-white" id="score-p2">0 Biji</p>
+                </div>
+            </div>
+
+            <!-- Turn Indicator -->
+            <div class="px-5 py-2 bg-amber-900/80 rounded-xl border border-amber-500/70 shadow-inner text-center">
+                <span class="text-[10px] uppercase tracking-widest text-amber-300 block font-semibold">Giliran Bermain</span>
+                <span id="turn-indicator" class="text-sm md:text-base font-bold text-yellow-300">Player 1</span>
+            </div>
+
+            <!-- Player 1 Info -->
+            <div class="flex items-center gap-3 sm:flex-row-reverse sm:text-right">
+                <div class="w-10 h-10 rounded-xl bg-amber-800 border border-amber-500 flex items-center justify-center font-bold text-amber-200 shadow-inner">
+                    P1
+                </div>
+                <div>
+                    <p class="text-xs text-amber-400 font-semibold uppercase tracking-wider">Player 1 (Bawah)</p>
+                    <p class="text-lg font-extrabold text-white" id="score-p1">0 Biji</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Papan Kayu Utama Congklak -->
+        <div class="board-wood w-full rounded-3xl p-4 md:p-6 border-4 border-amber-800/80 shadow-2xl relative overflow-hidden flex items-center justify-center">
+            
+            <div class="flex items-center justify-between w-full gap-2 md:gap-4">
+                
+                <!-- Lumbung Kiri (Store Player 2 / Indeks 15) -->
+                <div id="store-p2" class="store w-16 md:w-28 h-44 md:h-60 rounded-2xl md:rounded-3xl flex flex-col items-center justify-between p-3 shadow-inner relative group">
+                    <span class="text-[10px] md:text-xs font-bold text-amber-300 tracking-wider bg-amber-950/80 px-2 py-0.5 rounded-md border border-amber-700/50">LUMBUNG P2</span>
+                    
+                    <div class="flex flex-wrap items-center justify-center gap-1.5 max-h-32 overflow-y-auto px-1 w-full my-auto" id="store-p2-seeds-container">
+                        <!-- Biji akan dirender via JS -->
+                    </div>
+
+                    <div class="text-xl md:text-3xl font-black text-yellow-400 drop-shadow" id="store-p2-count">0</div>
+                </div>
+
+                <!-- Barisan Lubang-Lubang (P2 & P1) -->
+                <div class="flex flex-col gap-3 md:gap-4 flex-1">
+                    
+                    <!-- Baris Atas: Player 2 (Indeks 14 ke 8) -->
+                    <div class="grid grid-cols-7 gap-1.5 sm:gap-3" id="row-p2">
+                        <!-- Diisi via JS -->
+                    </div>
+
+                    <!-- Garis Pemisah Tengah Papan -->
+                    <div class="w-full h-1 bg-amber-950/90 rounded-full shadow-inner border-t border-amber-800/40"></div>
+
+                    <!-- Baris Bawah: Player 1 (Indeks 0 ke 6) -->
+                    <div class="grid grid-cols-7 gap-1.5 sm:gap-3" id="row-p1">
+                        <!-- Diisi via JS -->
+                    </div>
+
+                </div>
+
+                <!-- Lumbung Kanan (Store Player 1 / Indeks 7) -->
+                <div id="store-p1" class="store w-16 md:w-28 h-44 md:h-60 rounded-2xl md:rounded-3xl flex flex-col items-center justify-between p-3 shadow-inner relative group">
+                    <span class="text-[10px] md:text-xs font-bold text-amber-300 tracking-wider bg-amber-950/80 px-2 py-0.5 rounded-md border border-amber-700/50">LUMBUNG P1</span>
+                    
+                    <div class="flex flex-wrap items-center justify-center gap-1.5 max-h-32 overflow-y-auto px-1 w-full my-auto" id="store-p1-seeds-container">
+                        <!-- Biji akan dirender via JS -->
+                    </div>
+
+                    <div class="text-xl md:text-3xl font-black text-yellow-400 drop-shadow" id="store-p1-count">0</div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Panel Pesan & Aksi Bawah -->
+        <div class="w-full flex flex-col md:flex-row items-center justify-between gap-3 mt-4">
+            <!-- Kotak Pesan Game -->
+            <div id="game-message" class="w-full md:flex-1 text-center md:text-left text-xs md:text-sm font-medium text-amber-100 bg-amber-950/60 border border-amber-700/40 px-4 py-3 rounded-xl shadow-md">
+                Selamat datang! Silakan pilih salah satu lubang di baris bawah (Player 1) untuk mulai menabur.
+            </div>
+
+            <!-- Tombol Kontrol -->
+            <div class="flex items-center gap-2 w-full md:w-auto justify-center">
+                <button onclick="openRulesModal()" class="flex-1 md:flex-none px-4 py-2.5 bg-amber-800 hover:bg-amber-700 text-amber-100 font-bold text-xs md:text-sm rounded-xl border border-amber-600 shadow-lg transition active:scale-95 cursor-pointer">
+                    Aturan Main
+                </button>
+                <button onclick="initGame()" class="flex-1 md:flex-none px-5 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-amber-950 font-extrabold text-xs md:text-sm rounded-xl shadow-lg transition active:scale-95 cursor-pointer">
+                    Mulai Ulang
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-xs font-semibold text-amber-200/70 mt-6 text-center">
+        Dibuat oleh Pembuat Game: Luna Lestari • Nurserin • Agustina
+    </footer>
+
+    <!-- Modal Aturan Main -->
+    <div id="rules-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-amber-950 border-2 border-amber-600 max-w-lg w-full rounded-3xl p-6 shadow-2xl text-amber-100 relative">
+            <h2 class="text-xl font-bold text-yellow-400 mb-3 flex items-center gap-2">
+                📜 Aturan Main Congklak Tradisional
+            </h2>
+            <ul class="text-xs md:text-sm space-y-2 text-amber-200/90 list-disc pl-4">
+                <li>Setiap lubang kecil awal diisi dengan <strong>7 biji</strong>.</li>
+                <li>Pemain bergiliran memilih lubang di sisi mereka untuk disebar satu per satu ke lubang berikutnya berlawanan arah jarum jam.</li>
+                <li>Jika biji terakhir jatuh di <strong>lumbung sendiri</strong>, pemain mendapat kesempatan <strong>jalan lagi</strong>.</li>
+                <li>Jika biji terakhir jatuh di lubang kosong di area sendiri dan lubang seberang lawan berisi biji, pemain bisa <strong>menembak</strong> (mengambil seluruh biji lawan dan biji terakhir ke lumbung sendiri).</li>
+                <li>Jika biji terakhir jatuh di lubang yang ada isinya, pemain meneruskan penebaran (estafet) dengan mengambil biji di lubang tersebut.</li>
+                <li>Permainan selesai saat seluruh lubang kecil kosong. Pemain dengan biji terbanyak di lumbung adalah pemenangnya!</li>
+            </ul>
+            <div class="mt-6 text-right">
+                <button onclick="closeRulesModal()" class="px-5 py-2 bg-yellow-500 hover:bg-yellow-400 text-amber-950 font-bold text-sm rounded-xl shadow-lg transition cursor-pointer">
+                    Mengerti & Mainkan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Game & Loading Screen -->
+    <script>
+        // Simulasi Loading Screen Berdurasi Agak Lama
+        let loadProgress = 0;
+        const loadingBar = document.getElementById('loading-bar');
+        const loadingStatus = document.getElementById('loading-status');
+        const startBtn = document.getElementById('start-btn');
+
+        const loadInterval = setInterval(() => {
+            loadProgress += Math.floor(Math.random() * 4) + 2; 
+            if (loadProgress >= 100) {
+                loadProgress = 100;
+                clearInterval(loadInterval);
+                loadingStatus.innerText = "Game Siap Dimainkan!";
+                startBtn.classList.remove('hidden');
+            } else {
+                loadingStatus.innerText = `Menyiapkan Papan Kayu & Biji Congklak... (${loadProgress}%)`;
+            }
+            loadingBar.style.width = loadProgress + '%';
+        }, 130);
+
+        function startGame() {
+            const screen = document.getElementById('loading-screen');
+            screen.style.opacity = '0';
+            screen.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                screen.style.display = 'none';
+            }, 500);
+        }
+
+        // Struktur Papan Congklak (16 lubang total)
+        let board = [];
+        let turn = 1; 
+        let isAnimating = false;
+        let isGameOver = false;
+
+        function initGame() {
+            board = new Array(16).fill(0);
+            for (let i = 0; i <= 6; i++) board[i] = 7;
+            for (let i = 8; i <= 14; i++) board[i] = 7;
+            board[7] = 0;  
+            board[15] = 0; 
+
+            turn = 1;
+            isAnimating = false;
+            isGameOver = false;
+
+            renderBoard();
+            setMessage("Giliran Player 1. Silakan pilih salah satu lubang di baris bawah.");
+        }
+
+        function renderBoard() {
+            const rowP2 = document.getElementById('row-p2');
+            rowP2.innerHTML = '';
+            for (let i = 14; i >= 8; i--) {
+                rowP2.appendChild(createPitElement(i, 2));
+            }
+
+            const rowP1 = document.getElementById('row-p1');
+            rowP1.innerHTML = '';
+            for (let i = 0; i <= 6; i++) {
+                rowP1.appendChild(createPitElement(i, 1));
+            }
+
+            document.getElementById('store-p1-count').innerText = board[7];
+            document.getElementById('store-p2-count').innerText = board[15];
+
+            renderSeedsInStore(7, 'store-p1-seeds-container');
+            renderSeedsInStore(15, 'store-p2-seeds-container');
+
+            document.getElementById('score-p1').innerText = `${board[7]} Biji`;
+            document.getElementById('score-p2').innerText = `${board[15]} Biji`;
+
+            const turnIndicator = document.getElementById('turn-indicator');
+            if (turn === 1) {
+                turnIndicator.innerText = "Player 1 (Bawah)";
+                turnIndicator.className = "text-sm md:text-base font-bold text-yellow-300 animate-pulse";
+            } else {
+                turnIndicator.innerText = "Player 2 (Atas)";
+                turnIndicator.className = "text-sm md:text-base font-bold text-emerald-300 animate-pulse";
+            }
+        }
+
+        function createPitElement(index, playerOwner) {
+            const pitDiv = document.createElement('div');
+            pitDiv.className = "pit aspect-square rounded-2xl flex flex-col items-center justify-center p-1 cursor-pointer relative group";
+            pitDiv.setAttribute('data-index', index);
+
+            const isMyTurnSide = (turn === playerOwner);
+            if (isMyTurnSide && board[index] > 0 && !isAnimating && !isGameOver) {
+                pitDiv.classList.add('active-turn');
+            } else {
+                pitDiv.classList.add('disabled');
+            }
+
+            const seedsPreview = document.createElement('div');
+            seedsPreview.className = "flex flex-wrap items-center justify-center gap-1 max-h-12 overflow-hidden px-1";
+            
+            let count = board[index];
+            let maxDisplay = Math.min(count, 12);
+            for (let s = 0; s < maxDisplay; s++) {
+                const seedDot = document.createElement('div');
+                seedDot.className = "w-2.5 h-2.5 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 shadow-sm border border-amber-600";
+                seedsPreview.appendChild(seedDot);
+            }
+
+            pitDiv.appendChild(seedsPreview);
+
+            const countLabel = document.createElement('span');
+            countLabel.className = "text-xs font-black text-amber-200 mt-1 drop-shadow";
+            countLabel.innerText = count;
+            pitDiv.appendChild(countLabel);
+
+            pitDiv.onclick = () => handlePitClick(index);
+
+            return pitDiv;
+        }
+
+        function renderSeedsInStore(storeIndex, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            let count = board[storeIndex];
+            let maxDisplay = Math.min(count, 20);
+            for (let s = 0; s < maxDisplay; s++) {
+                const seedDot = document.createElement('div');
+                seedDot.className = "w-2 h-2 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 shadow-sm";
+                container.appendChild(seedDot);
+            }
+        }
+
+        function setMessage(msg) {
+            document.getElementById('game-message').innerText = msg;
+        }
+
+        async function handlePitClick(index) {
+            if (isAnimating || isGameOver) return;
+
+            if (turn === 1 && (index < 0 || index > 6)) {
+                setMessage("Bukan lubangmu! Silakan pilih lubang di baris bawah (Player 1).");
+                return;
+            }
+            if (turn === 2 && (index < 8 || index > 14)) {
+                setMessage("Bukan lubangmu! Silakan pilih lubang di baris atas (Player 2).");
+                return;
+            }
+
+            if (board[index] === 0) {
+                setMessage("Lubang kosong! Pilih lubang yang berisi biji.");
+                return;
+            }
+
+            isAnimating = true;
+            await sowSeeds(index);
+        }
+
+        async function sowSeeds(startIndex) {
+            let seeds = board[startIndex];
+            board[startIndex] = 0;
+            let currentIndex = startIndex;
+            renderBoard();
+
+            await new Promise(r => setTimeout(r, 250));
+
+            while (seeds > 0) {
+                currentIndex = (currentIndex + 1) % 16;
+
+                if (turn === 1 && currentIndex === 15) continue;
+                if (turn === 2 && currentIndex === 7) continue;
+
+                board[currentIndex]++;
+                seeds--;
+                renderBoard();
+                await new Promise(r => setTimeout(r, 200));
+            }
+
+            if ((turn === 1 && currentIndex === 7) || (turn === 2 && currentIndex === 15)) {
+                setMessage(`Hebat! Biji terakhir jatuh di lumbungmu. Player ${turn} mendapat giliran tambahan!`);
+                isAnimating = false;
+                checkWinCondition();
+                renderBoard();
+                return;
+            }
+
+            if (board[currentIndex] === 1) {
+                let isOwnSide = (turn === 1 && currentIndex >= 0 && currentIndex <= 6) ||
+                                (turn === 2 && currentIndex >= 8 && currentIndex <= 14);
+
+                if (isOwnSide) {
+                    let oppositeIndex = 14 - currentIndex;
+                    if (board[oppositeIndex] > 0) {
+                        let captured = board[oppositeIndex] + board[currentIndex];
+                        board[oppositeIndex] = 0;
+                        board[currentIndex] = 0;
+
+                        let storeIdx = (turn === 1) ? 7 : 15;
+                        board[storeIdx] += captured;
+                        renderBoard();
+                        setMessage(`Dor! Berhasil menembak dan mengumpulkan ${captured} biji ke lumbung!`);
+                        await new Promise(r => setTimeout(r, 400));
+                    }
+                }
+            }
+
+            if (board[currentIndex] > 1) {
+                setMessage(`Biji terakhir jatuh di lubang berisi. Melanjutkan tebar biji (estafet)!`);
+                await new Promise(r => setTimeout(r, 400));
+                await sowSeeds(currentIndex);
+                return;
+            }
+
+            turn = turn === 1 ? 2 : 1;
+            isAnimating = false;
+            checkWinCondition();
+            if (!isGameOver) {
+                setMessage(`Giliran beralih ke Player ${turn}. Silakan pilih lubangmu.`);
+            }
+            renderBoard();
+        }
+
+        function checkWinCondition() {
+            let p1Empty = true;
+            for (let i = 0; i <= 6; i++) {
+                if (board[i] > 0) p1Empty = false;
+            }
+
+            let p2Empty = true;
+            for (let i = 8; i <= 14; i++) {
+                if (board[i] > 0) p2Empty = false;
+            }
+
+            if (p1Empty || p2Empty) {
+                isGameOver = true;
+                for (let i = 0; i <= 6; i++) {
+                    board[7] += board[i];
+                    board[i] = 0;
+                }
+                for (let i = 8; i <= 14; i++) {
+                    board[15] += board[i];
+                    board[i] = 0;
+                }
+                renderBoard();
+
+                let resultText = "";
+                if (board[7] > board[15]) {
+                    resultText = `🎉 Permainan Selesai! Selamat kepada Player 1 sebagai Pemenang! (${board[7]} vs ${board[15]})`;
+                } else if (board[15] > board[7]) {
+                    resultText = `🎉 Permainan Selesai! Selamat kepada Player 2 sebagai Pemenang! (${board[15]} vs ${board[7]})`;
+                } else {
+                    resultText = `🤝 Permainan Berakhir Seri (Draw) dengan skor seimbang!`;
+                }
+                setMessage(resultText);
+            }
+        }
+
+        function openRulesModal() {
+            document.getElementById('rules-modal').classList.remove('hidden');
+        }
+
+        function closeRulesModal() {
+            document.getElementById('rules-modal').classList.add('hidden');
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
